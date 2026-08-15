@@ -19,7 +19,10 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN", "893...") # Tu token de Telegram
+TOKEN = "8935003510:AAG7PaqJ2Ymgz3Ag8uk-VpmLiVTMMgmOMe4"
+
+
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¡Hola! Envíame una imagen (como foto o archivo) para vectorizarla.")
