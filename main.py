@@ -60,7 +60,8 @@ async def process_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
             layer_difference=16,
             corner_threshold=60,
             length_threshold=4,
-            max_iterations=10,
+             max_iterations=3,
+        
             splice_threshold=45,
             path_precision=3
         )
