@@ -19,7 +19,8 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-TOKEN = "8935003510:AAG7PaqJ2Ymgz3Ag8uk-VpmLiVTMMgmOMe4"
+TOKEN = "8935003510:AAG5_ZD_bW_6e2QsxpTwSWZa8iMtZvsXXK4"
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¡Hola! Envíame una imagen (como foto o archivo) para vectorizarla.")
