@@ -8,7 +8,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from PIL import Image
 import vtracer
 
-# Servidor Flask para responder a Render y evitar el timeout
+# Servidor Flask para responder a Render y mantener activo el servicio
 app = Flask('')
 
 @app.route('/')
@@ -21,13 +21,11 @@ def run_flask():
 
 TOKEN = "8935003510:AAG7PaqJ2Ymgz3Ag8uk-VpmLiVTMMgmOMe4"
 
-
-
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("¡Hola! Envíame una imagen (como foto o archivo) para vectorizarla.")
 
 async def process_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("--> Imagen recibida. Iniciando procesamiento...")
     msg = await update.message.reply_text("⏳ Procesando imagen, por favor espera...")
     
     try:
@@ -36,19 +34,21 @@ async def process_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif update.message.document:
             file_id = update.message.document.file_id
         else:
-            await msg.edit_text("Envía una imagen válida.")
+            await msg.edit_text("Por favor, envía una imagen válida.")
             return
 
         tg_file = await context.bot.get_file(file_id)
         image_bytes = await tg_file.download_as_bytearray()
 
+        # Redimensionar la imagen para no saturar la RAM de Render
+        img = Image.open(io.BytesIO(image_bytes))
+        img.thumbnail((800, 800))  # Ajusta el máximo a 800px manteniendo la proporción
+        
         input_path = "input.png"
         output_path = "output.svg"
+        img.save(input_path, format="PNG")
 
-        with open(input_path, "wb") as f:
-            f.write(image_bytes)
-
-        # Configuración de vectorización con vtracer
+        # Vectorización con parámetros optimizados y livianos
         vtracer.convert_image_to_svg_py(
             input_path,
             output_path,
@@ -60,8 +60,7 @@ async def process_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
             layer_difference=16,
             corner_threshold=60,
             length_threshold=4,
-             max_iterations=3,
-        
+            max_iterations=3,
             splice_threshold=45,
             path_precision=3
         )
@@ -70,24 +69,25 @@ async def process_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_document(
                 document=f,
                 filename="vector.svg",
-                caption="¡Aquí tienes tu imagen vectorizada en SVG! 🎨"
+                caption="¡Aquí tienes tu imagen vectorizada!"
             )
-
+            
+        print("--> ¡Vectorización completada y enviada!")
         await msg.delete()
 
     except Exception as e:
-        await msg.edit_text(f"❌ Ocurrió un error al procesar la imagen: {str(e)}")
+        print(f"Error: {e}")
+        await msg.edit_text(f"Ocurrió un error al procesar la imagen: {e}")
 
 def main():
-    # Inicia el servidor HTTP de Flask en un hilo secundario
     Thread(target=run_flask).start()
-
-    # Inicia el bot de Telegram
+    
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, process_image))
     
     application.run_polling()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
+
