@@ -79,15 +79,31 @@ async def process_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Error: {e}")
         await msg.edit_text(f"Ocurrió un error al procesar la imagen: {e}")
 
-def main():
-    Thread(target=run_flask).start()
-    
+async def run_bot():
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, process_image))
     
-    application.run_polling()
+    # Inicialización manual limpia para evitar conflictos con el hilo de Flask
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling(drop_pending_updates=True)
+    
+    # Mantiene corriendo el evento de Telegram sin bloquear
+    while True:
+        await asyncio.sleep(3600)
+
+def main():
+    # Inicia el servidor web en segundo plano
+    Thread(target=run_flask, daemon=True).start()
+    
+    # Ejecuta el bot con asyncio
+    try:
+        asyncio.run(run_bot())
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == "__main__":
     main()
+
 
